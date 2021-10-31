@@ -64,7 +64,7 @@ def remove_sparse_rowcol(spmat: sparse.csr_matrix,
        """
 
     if not isinstance(spmat, sparse.csr_matrix):
-        raise TypeError("Sparse matrix not in csr form!")
+        raise TypeError("remove_sparse_rowcol: Sparse matrix not in csr form!")
 
     rows_mask: npt.NDArray[np.bool_] = np.ones(spmat.shape[0], dtype=bool)
     cols_mask: npt.NDArray[np.bool_] = np.ones(spmat.shape[1], dtype=bool)
@@ -74,3 +74,53 @@ def remove_sparse_rowcol(spmat: sparse.csr_matrix,
         cols_mask[cols_idx] = False
 
     return spmat[rows_mask][:,cols_mask]
+
+def extract_sparse_rowcol(spmat: sparse.csr_matrix,
+                          idx: npt.NDArray[np.int32],
+                          ext: str) -> sparse.csr_matrix:
+    """extract rows or columns from an input sparse matrix.
+
+       Parameters
+       ----------
+       spmat : sparse.csr_matrix
+            Sparse matrix in compress sparse row format.
+
+       idx : array_like
+            Indices to be extracted. The numbering must be greater than zero
+            for extraction to work.
+
+       ext : string {'row', 'col'}
+            Whether to extract rows or columns
+
+       Returns
+       -------
+       spmat : sparse.csr_matrix
+            Extracted sparse matrix in compress sparse row format.
+
+       Notes
+       -----
+       Be very careful using this function as no error message is thrown if
+       idx has negative indices! It assumes that the indices are done correctly.
+       # TODO: Add catch
+
+       Examples
+       --------
+       rows_idx = np.asarray([0,3,4,5])
+       spmat    = remove_sparse_rowcol(spmat, rows_idx=rows_idx))
+       """
+
+    if not isinstance(spmat, sparse.csr_matrix):
+        raise TypeError("extract_sparse_rowcol: Sparse matrix not in csr form!")
+
+    if((ext!='row') & (ext!='col')):
+        raise KeyError("extract_sparse_rowcol: ext neither row or col")
+
+    mask_idx: int = 0 if ext=='row' else 1
+    mask: npt.NDArray[np.bool_] = np.zeros(spmat.shape[mask_idx], dtype=bool)
+    if idx.min() >= 0:
+        mask[idx] = True
+
+    if mask_idx==0:
+        return spmat[mask]
+    else:
+        return spmat[:,mask]
