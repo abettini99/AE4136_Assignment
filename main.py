@@ -13,11 +13,12 @@ from scipy.sparse import linalg as splinalg
 import scipy.sparse as sparse
 import matplotlib.pyplot as plt
 import numpy as np
+from lib.incidence_funcs import *
 
 def main() -> None:
     ## Set up problem variables
     L       = float(1.0)
-    Re      = float(1000)   # Reynolds number 
+    Re      = float(1000)   # Reynolds number
     N       = int(64)  	# mesh cells in x- and y-direction
     tol     = float(1e-6)
 
@@ -31,7 +32,7 @@ def main() -> None:
     tx  = np.zeros([N+1,1],         dtype = np.float)   # grid points on primal grid
     x   = np.zeros([N+2,1],         dtype = np.float)   # grid points on dual grid
     th  = np.zeros([N],             dtype = np.float)   # mesh width primal grid
-    h   = np.zeros([N+1],           dtype = np.float)   # mesh width dual grid 
+    h   = np.zeros([N+1],           dtype = np.float)   # mesh width dual grid
 
     ## Generation of a non-uniform grid
     x[0] = 0
@@ -42,10 +43,10 @@ def main() -> None:
         if i>0:
             th[i-1] = tx[i] - tx[i-1]           # th mesh width on primal mesh
             x[i] = 0.5*(tx[i-1]+tx[i])          # x mesh points for dual mesh
-            
+
     for i in range(N+1):
         h[i] = x[i+1]-x[i]                      # h mesh width on dual mesh
-        
+
     th_min = min(th)
     h_min = min(h)
     h_min = min(h_min,th_min)                   # determination smallest mesh size
@@ -58,7 +59,7 @@ def main() -> None:
     #  Note that the time step is a bit conservative so it may be useful to see
     #  if the time step can be slightly increased. This will speed up the
     #  calculation.
-    # 
+    #
 
     #  Boundary conditions for the lid driven acvity test case
     U_wall_top = -1
@@ -88,7 +89,7 @@ def main() -> None:
     #  Set up the (extended) sparse, inner-oriented incidence matrix E21
 
 
-    #  Split off the prescribed tangential velocity and store this in 
+    #  Split off the prescribed tangential velocity and store this in
     #  the vector u_pres
 
 
@@ -98,7 +99,7 @@ def main() -> None:
     #  Set up the Hodge matrix Ht02
 
 
-    A = tE21@Ht11@E10
+    """ A = tE21@Ht11@E10
     #print("A")
     #print(A.toarray())
     #input("Press Enter to continue...")
@@ -107,7 +108,7 @@ def main() -> None:
     LU = splinalg.splu(A,diag_pivot_thresh=0) # sparse LU decomposition
 
     u_pres_vort = Ht02@u_pres
-    temp = H1t1@tE10@Ht02@u_pres 
+    temp = H1t1@tE10@Ht02@u_pres
 
     u_pres = temp
 
@@ -119,61 +120,57 @@ def main() -> None:
     convective = np.zeros([2*N*(N+1),1], dtype = float)
 
     while (diff>tol):
-        
+
         xi = Ht02@E21@u + u_pres_vort
-        
+
         for i in range(N+1):
             for j in range(N+1):
-                k = j + i*(N+1); 
+                k = j + i*(N+1);
                 if j==0:
-                    ux_xi[k] = U_wall_bot*xi[i+j*(N+1)]    
+                    ux_xi[k] = U_wall_bot*xi[i+j*(N+1)]
                     uy_xi[k] = V_wall_left*xi[j+i*(N+1)
                 elif j==N:
                     ux_xi[k] = U_wall_top*xi[i+j*(N+1)]
                     uy_xi[k] = V_wall_right*xi[j+i*(N+1)]
                 else:
                     ux_xi[k] = (u[i+j*(N+1)]+u[i+(j-1)*(N+1)])*xi[i+j*(N+1)]/(2.*h[i])                       # Klopt
-                    uy_xi[k] = (u[N*(N+1)+j+i*N] + u[N*(N+1)+j-1+i*N])*xi[j+i*(N+1)]/(2.*h[i])  
+                    uy_xi[k] = (u[N*(N+1)+j+i*N] + u[N*(N+1)+j-1+i*N])*xi[j+i*(N+1)]/(2.*h[i])
 
         for  i in range(N):
             for j in range(N+1):
                 convective[j+i*(N+1)] = -(uy_xi[j+i*(N+1)]+uy_xi[j+(i+1)*(N+1)])*h[j]/2.
                 convective[N*(N+1)+i+j*N] = (ux_xi[j+i*(N+1)]+ux_xi[j+(i+1)*(N+1)])*h[j]/2.
-                
+
         # Set up the right hand side for the equation for the pressure
-                
+
         rhs_Pois = DIV@( u/dt - convective - VLaplace@u/Re - u_pres/Re) + u_norm/dt
-        
+
         # Solve for the pressure
-        
+
         p = LU.solve(rhs_Pois)
-        
+
         # Store the velocity from the previous time level in the vector uold
-        
+
         uold = u
-        
+
         # Update the velocity field
-        
+
         u = u - dt*(convective + E10@p + (VLaplace@u)/Re + u_pres/Re)
-        
-        # Every other 1000 iterations check whether you approach steady state and 
-        # check whether you satsify conservation of mass. The largest rate at whci 
+
+        # Every other 1000 iterations check whether you approach steady state and
+        # check whether you satsify conservation of mass. The largest rate at whci
         # mass is created ot destroyed is denoted my 'maxdiv'. This number should
         # be close to machine precision.
-        
+
         if ((iter%1000)==0):
             maxdiv = max(abs(DIV@u+u_norm))
             diff = max(abs(u-uold))/dt
-        
+
             print("maxdiv : ",maxdiv)
             print("diff   : ", diff)
-             
-        iter += 1
-    
+
+        iter += 1 """
+
 
 if __name__ == "__main__":
     main()
-                
-
-                    
-                
