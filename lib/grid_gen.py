@@ -74,6 +74,9 @@ class Grid2D:
        get_all_dual_cells_idx() -> array_like ( [N+2, M+2] )
            returns indices of all dual cells in grid form.
 
+       get_inner_dual_cells_idx() -> array_like ( [2*(N+M) - 4] )
+           returns indices of inner dual cells in a flattened sorted array.
+
        get_all_dual_faces_idx() -> list[ array_like ] ( [2 -> [x,x]] )
            returns indices of all dual faces in V, H format and in grid form.
 
