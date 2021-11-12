@@ -410,6 +410,16 @@ class Grid2D:
     def get_all_dual_cells_idx(self) -> npt.NDArray[np.int32]:
         return self.matDcell_idx
 
+    # TODO update documentation
+    def get_inner_dual_cells_idx(self) -> npt.NDArray[np.int32]:
+        flattened_idx: npt.NDArray[np.int32] = self.matDcell_idx[0,:]
+        flattened_idx = np.hstack((flattened_idx, self.matDcell_idx[-1,:]))
+        flattened_idx = np.hstack((flattened_idx, self.matDcell_idx[:,0]))
+        flattened_idx = np.hstack((flattened_idx, self.matDcell_idx[:,-1]))
+        flattened_idx = np.sort(np.unique(flattened_idx))
+
+        return flattened_idx
+
     def get_all_dual_faces_idx(self) -> list[npt.NDArray[np.int32]]:
         return self.matDface_idx
 
