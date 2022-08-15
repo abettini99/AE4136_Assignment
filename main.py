@@ -19,15 +19,17 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math as m
 import numba as nb
+import os
 from lib.incidence_mat import *
 from lib.hodge_mat import *
 from lib.grid_gen import *
+from lib.utils import *
 
-def main() -> None:
+def main(N_input) -> None:
     ## Set up problem variables
     L       = float(1.0)
     Re      = float(1000)   # Reynolds number
-    N       = int(31)  	# mesh cells in x- and y-direction
+    N       = int(N_input)  	# mesh cells in x- and y-direction
     tol     = float(1e-6)
     diff    = np.inf
 
@@ -182,10 +184,12 @@ def main() -> None:
             print(f"{maxdiv:.7e} \t| {diff:.7e}")
 
         iter += 1
+    print("tolerance reached")
+    print("")
 
-    #### ============= ####
-    #### Plot contours ####
-    #### ============= ####
+    #### ==================== ####
+    #### Create contours data ####
+    #### ==================== ####
 
     ## Pressure contours
     # Setup pressure arrays for plots
@@ -220,9 +224,9 @@ def main() -> None:
     p_sub    = p_psurf[xmid_idx,ymid_idx]
 
     # Plot
-    plevels = np.sort( np.asarray([0.3,0.17,0.12,0.11,0.09,0.07,0.05,0.02,0.0,-0.002]) )
-    plt.contour(x_psurf,y_psurf,p_psurf - p_sub,levels=plevels)
-    plt.show()
+    # plevels = np.sort( np.asarray([0.3,0.17,0.12,0.11,0.09,0.07,0.05,0.02,0.0,-0.002]) )
+    # plt.contour(x_psurf,y_psurf,p_psurf - p_sub,levels=plevels)
+    # plt.show()
 
 
     ## Vorticity contours
@@ -237,9 +241,9 @@ def main() -> None:
     vort_vortsurf = vort.reshape(N+1,N+1)
 
     # Plot
-    vortlevels = np.sort( np.asarray([5.0,4.0,3.0,2.0,1.0,0.5,0,-0.5,-1.0,-2.0,-3.0]) )
-    plt.contour(x_vortsurf,y_vortsurf,vort_vortsurf,levels=vortlevels)
-    plt.show()
+    # vortlevels = np.sort( np.asarray([5.0,4.0,3.0,2.0,1.0,0.5,0,-0.5,-1.0,-2.0,-3.0]) )
+    # plt.contour(x_vortsurf,y_vortsurf,vort_vortsurf,levels=vortlevels)
+    # plt.show()
 
     ## Stream function contours
     # Define least-square problem to solve for
@@ -263,9 +267,65 @@ def main() -> None:
     psi_sub = psi_psisurf[0,0]
 
     # Plot
-    psilevels = np.sort( np.asarray([0.1175,0.115,0.11,0.1,9e-2,7e-2,5e-2,3e-2,1e-2,1e-4,1e-5,1e-10,0,-1e-6,-1e-5,-5e-5,-1e-4,-2.5e-4,-5e-4,-1e-3,-1.5e-3]) )
-    plt.contour(x_psisurf, y_psisurf, psi_psisurf-psi_sub, levels=psilevels)
-    plt.show()
+    # psilevels = np.sort( np.asarray([0.1175,0.115,0.11,0.1,9e-2,7e-2,5e-2,3e-2,1e-2,1e-4,1e-5,1e-10,0,-1e-6,-1e-5,-5e-5,-1e-4,-2.5e-4,-5e-4,-1e-3,-1.5e-3]) )
+    # plt.contour(x_psisurf, y_psisurf, psi_psisurf-psi_sub, levels=psilevels)
+    # plt.show()
+
+    ## u, v
+    x_uvsurf = np.zeros((N+3,N+3))
+    y_uvsurf = np.zeros((N+3,N+3))
+    x_uvsurf[:,0], x_uvsurf[:,1:-1], x_uvsurf[:,-1] = x[0], (x[1:]+x[:-1])/2, x[-1]
+    y_uvsurf[:,0], y_uvsurf[:,1:-1], y_uvsurf[:,-1] = x[0], (x[1:]+x[:-1])/2, x[-1]
+    y_uvsurf = y_uvsurf.transpose()
+    u_tmp = np.zeros(((N+1)*(N+1)))
+    v_tmp = np.zeros(((N+1)*(N+1)))
+    u_uvsurf = np.zeros((N+3,N+3))
+    v_uvsurf = np.zeros((N+3,N+3))
+
+    for cell in domain.Dcell_array:
+        idx  = cell.Tidx
+        idxN = cell.faces_idx[dir2D.N]; faceN = domain.Dface_array[idxN]
+        idxE = cell.faces_idx[dir2D.E]; faceE = domain.Dface_array[idxE]
+        idxS = cell.faces_idx[dir2D.S]; faceS = domain.Dface_array[idxS]
+        idxW = cell.faces_idx[dir2D.W]; faceW = domain.Dface_array[idxW]
+
+        if faceN.type == 'internal':    u_tmp[idx] += u[faceN.Tidx]/cell.h[dir2D.x]/2
+        elif faceN.type == 'north':     u_tmp[idx] += U_wall_top/2
+
+        if faceS.type == 'internal':    u_tmp[idx] += u[faceS.Tidx]/cell.h[dir2D.x]/2
+        elif faceS.type == 'south':     u_tmp[idx] += U_wall_bot/2
+
+        if faceE.type == 'internal':    v_tmp[idx] += u[faceE.Tidx]/cell.h[dir2D.y]/2
+        elif faceE.type == 'east':      v_tmp[idx] += U_wall_right/2
+
+        if faceW.type == 'internal':    v_tmp[idx] += u[faceW.Tidx]/cell.h[dir2D.y]/2
+        elif faceW.type == 'west':      v_tmp[idx] += U_wall_left/2
+
+    u_uvsurf[1:-1,1:-1] = u_tmp.reshape(N+1,N+1)
+    v_uvsurf[1:-1,1:-1] = v_tmp.reshape(N+1,N+1)
+
+    u_uvsurf[0,:], u_uvsurf[-1,:], u_uvsurf[:,0], u_uvsurf[:,-1] = U_wall_bot, U_wall_top, U_wall_left, U_wall_right
+    v_uvsurf[0,:], v_uvsurf[-1,:], v_uvsurf[:,0], v_uvsurf[:,-1] = V_wall_bot, V_wall_top, V_wall_left, V_wall_right
+    # for i in range(u_uvsurf.shape[0]):
+    #     print(np.round(v_uvsurf[i],3))
+
+    # plt.contour(x_uvsurf, y_uvsurf, u_uvsurf, levels=20)
+    # plt.show()
+    #
+    # plt.contour(x_uvsurf, y_uvsurf, v_uvsurf, levels=20)
+    # plt.show()
+
+    #### =========== ####
+    #### Export data ####
+    #### =========== ####
+    folder_name = f'N{N}'
+    if not os.path.exists('exports/{}'.format(folder_name)):
+        os.makedirs('exports/{}'.format(folder_name))
+    np.savez('exports/{}/pressure.npz'.format(folder_name), x_pres=x_psurf, y_pres=y_psurf, pres=p_psurf-p_sub)
+    np.savez('exports/{}/vorticity.npz'.format(folder_name), x_vort=x_vortsurf, y_vort=y_vortsurf, vort=vort_vortsurf)
+    np.savez('exports/{}/psi.npz'.format(folder_name), x_psi=x_psisurf, y_psi=y_psisurf, psi=psi_psisurf-psi_sub)
+    np.savez('exports/{}/uv.npz'.format(folder_name), x_uv=x_uvsurf, y_uv=y_uvsurf, u=u_uvsurf, v=v_uvsurf)
+
 
 @nb.jit(nopython=True)
 def construct_convective(N, u, ux_xi, uy_xi, xi, h, convective, U_wall_bot, V_wall_left, U_wall_top, V_wall_right):
@@ -290,4 +350,13 @@ def construct_convective(N, u, ux_xi, uy_xi, xi, h, convective, U_wall_bot, V_wa
     return convective
 
 if __name__ == "__main__":
-    main()
+
+    # Check if main export folder exists
+    if not os.path.exists('exports'):
+        os.makedirs('exports')
+
+    main(15)
+    main(31)
+    main(47)
+    main(55)
+    main(63)
