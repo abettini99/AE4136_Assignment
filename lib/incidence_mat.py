@@ -130,7 +130,7 @@ def construct_E21_2D(grid: Grid2D) -> tuple[sparse.csr.csr_matrix, sparse.csr.cs
         idxLT = dual_face.cells_idx[0] # idxLT -> dir2D.Ld or dir2D.Td
         idxRB = dual_face.cells_idx[1] # idxRB -> dir2D.Rd or dir2D.Bd
 
-        if dual_face.type == 'internal':
+        if dual_face.type == 'internal': # Note that in dual domain, the true index is also the array index
             tE21_tmp[(idxLT,idx)] = 1  # Note that the circulation contribution for the left/top cell is upwards/rightwards, so positive when considering CCW+ curl
             tE21_tmp[(idxRB,idx)] = -1   # Note that the circulation contribution for the right/bottom cell is downwards/leftwards, so negative when considering CCW+ curl
         else:

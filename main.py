@@ -86,9 +86,9 @@ def main(N_input) -> None:
             elif face.type == 'east':
                 u_norm[idx] = U_wall_left*hface
             elif face.type == 'south':
-                u_norm[idx] = V_wall_bot*hface
+                u_norm[idx] = V_wall_bot*hface#-V_wall_bot*hface # No need for negatives as these are integrals defined in our predefined direction.
             elif face.type == 'west':
-                u_norm[idx] = U_wall_right*hface
+                u_norm[idx] = U_wall_right*hface#-U_wall_right*hface
 
     u_norm = ntE21@u_norm
 
@@ -116,13 +116,13 @@ def main(N_input) -> None:
             hface = m.sqrt( (x0-x1)**2 + (y0-y1)**2 )
 
             if face.type == 'north':
-                u_pres[idx] = -U_wall_top*hface
+                u_pres[idx] = U_wall_top*hface #-U_wall_top*hface # No need for negatives as these are integrals defined in our predefined direction.
             elif face.type == 'east':
                 u_pres[idx] = V_wall_left*hface
             elif face.type == 'south':
                 u_pres[idx] = U_wall_bot*hface
             elif face.type == 'west':
-                u_pres[idx] = -V_wall_right*hface
+                u_pres[idx] = V_wall_right*hface#-V_wall_right*hface
     u_pres = nE21@u_pres
 
     #  Set up the Hodge matrices Ht11 and H1t1
@@ -175,7 +175,7 @@ def main(N_input) -> None:
             diff    = max(abs(u-uold))/dt
 
             if not iter == 0: print("\n")
-            print("max(divU) \t| max(DeltaU)")
+            print(f"max(divU) \t| max(DeltaU) \t\t(N = {N_input})")
             print(f"{maxdiv:.7e} \t| {diff:.7e}")
 
         elif (iter%1000 == 0):
@@ -196,26 +196,86 @@ def main(N_input) -> None:
     x_psurf = np.zeros((N+2,N+2))
     y_psurf = np.zeros((N+2,N+2))
     p_psurf = np.zeros((N+2,N+2))
+    u_psurf = np.zeros(p.shape)
+    v_psurf = np.zeros(p.shape)
     p_mask  = np.ones((p.shape),dtype=bool) # We need to mask some gridpoints due to dual boundary vertices counting as internal points
 
     # We create the mask by going through all faces, which contain information on whether they are boundary or not
     for face in domain.Dface_array:
-        if face.type != 'internal':
+        if face.type != 'internal': # if not internal
 
             idx0,idx1   = face.vertices_idx[0],face.vertices_idx[1]
             vert0,vert1 = domain.Dvert_array[idx0],domain.Dvert_array[idx1]
-            Tidx0,Tidx1 = vert0.Tidx, vert1.Tidx
+            Tidx0,Tidx1 = vert0.Tidx, vert1.Tidx # grab vertex indices
 
-            if vert0.type == 'internal': p_mask[Tidx0] = False # Virtual corner cells exists
-            if vert1.type == 'internal': p_mask[Tidx1] = False
+            if vert0.type == 'internal': p_mask[Tidx0] = False # Basically, all dual vertices are either internal or virtual. The virtual ones are the ones in the corner entries
+            if vert1.type == 'internal': p_mask[Tidx1] = False # So basically we need to account for the fact that the boundary vertices are also considered internal for this assignment.
+
+    # We need to subtract dynamic pressure from p to get static pressure.
+    for cell in domain.Dcell_array:
+        # we basically need information at the cell level to deduce information at the vertex level at this point.
+        idx  = cell.Tidx
+        idxN = cell.faces_idx[dir2D.N]; faceN = domain.Dface_array[idxN]
+        idxE = cell.faces_idx[dir2D.E]; faceE = domain.Dface_array[idxE]
+        idxS = cell.faces_idx[dir2D.S]; faceS = domain.Dface_array[idxS]
+        idxW = cell.faces_idx[dir2D.W]; faceW = domain.Dface_array[idxW]
+
+        idxN0,idxN1   = faceN.vertices_idx[0],faceN.vertices_idx[1]
+        idxE0,idxE1   = faceE.vertices_idx[0],faceE.vertices_idx[1]
+        idxS0,idxS1   = faceS.vertices_idx[0],faceS.vertices_idx[1]
+        idxW0,idxW1   = faceW.vertices_idx[0],faceW.vertices_idx[1]
+
+        vertN0,vertN1 = domain.Dvert_array[idxN0],domain.Dvert_array[idxN1]
+        vertE0,vertE1 = domain.Dvert_array[idxE0],domain.Dvert_array[idxE1]
+        vertS0,vertS1 = domain.Dvert_array[idxS0],domain.Dvert_array[idxS1]
+        vertW0,vertW1 = domain.Dvert_array[idxW0],domain.Dvert_array[idxW1]
+
+        TidxN0,TidxN1 = vertN0.Tidx, vertN1.Tidx
+        TidxE0,TidxE1 = vertE0.Tidx, vertE1.Tidx
+        TidxS0,TidxS1 = vertS0.Tidx, vertS1.Tidx
+        TidxW0,TidxW1 = vertW0.Tidx, vertW1.Tidx
+
+        if faceN.type == 'internal':
+            if vertN0.type == 'internal': u_psurf[TidxN0] += u[faceN.Tidx]/cell.h[dir2D.x]
+            if vertN1.type == 'internal': u_psurf[TidxN1] += u[faceN.Tidx]/cell.h[dir2D.x]
+        elif faceN.type == 'north':
+            if vertN0.type == 'internal': u_psurf[TidxN0] += U_wall_top
+            if vertN1.type == 'internal': u_psurf[TidxN1] += U_wall_top
+
+        if faceS.type == 'internal':
+            if vertS0.type == 'internal': u_psurf[TidxS0] += u[faceS.Tidx]/cell.h[dir2D.x]
+            if vertS1.type == 'internal': u_psurf[TidxS1] += u[faceS.Tidx]/cell.h[dir2D.x]
+        elif faceS.type == 'south':
+            if vertS0.type == 'internal': u_psurf[TidxS0] += U_wall_bot
+            if vertS1.type == 'internal': u_psurf[TidxS1] += U_wall_bot
+
+        if faceE.type == 'internal':
+            if vertE0.type == 'internal': v_psurf[TidxE0] += u[faceE.Tidx]/cell.h[dir2D.y]
+            if vertE1.type == 'internal': v_psurf[TidxE1] += u[faceE.Tidx]/cell.h[dir2D.y]
+        elif faceE.type == 'east':
+            if vertE0.type == 'internal': v_psurf[TidxE0] += V_wall_right
+            if vertE1.type == 'internal': v_psurf[TidxE1] += V_wall_right
+
+        if faceW.type == 'internal':
+            if vertW0.type == 'internal': v_psurf[TidxW0] += u[faceW.Tidx]/cell.h[dir2D.y]
+            if vertW1.type == 'internal': v_psurf[TidxW1] += u[faceW.Tidx]/cell.h[dir2D.y]
+        elif faceW.type == 'west':
+            if vertW0.type == 'internal': v_psurf[TidxW0] += V_wall_left
+            if vertW1.type == 'internal': v_psurf[TidxW1] += V_wall_left
+
+    # Each vertex surrounded by four cells! so each vertex counted 4 times as we loop over all cells! We take the average of the four cells
+    u_psurf = u_psurf/4
+    v_psurf = v_psurf/4
 
     # We fill in the surfaces now
+    rho = 1
+    V2_psurf = u_psurf**2 + v_psurf**2
     x_psurf[:], y_psurf[:]  = x, x
     y_psurf                 = y_psurf.transpose()
-    p_psurf[1:-1,1:-1]      = p[p_mask].reshape(N,N)
+    p_psurf[1:-1,1:-1]      = p[p_mask].reshape(N,N) - 0.5*rho*V2_psurf[p_mask].reshape(N,N)
     p_psurf[0,:]            = p_psurf[1,:]
     p_psurf[-1,:]           = p_psurf[-2,:]
-    p_psurf[:,0]            = p_psurf[0,:1]
+    p_psurf[:,0]            = p_psurf[:,1]
     p_psurf[:,-1]           = p_psurf[:,-2]
 
     # Note the near singular matrix allows for a solution to be solved. The constant factor needs to be removed to match the solutions by Botella
@@ -296,10 +356,10 @@ def main(N_input) -> None:
         elif faceS.type == 'south':     u_tmp[idx] += U_wall_bot/2
 
         if faceE.type == 'internal':    v_tmp[idx] += u[faceE.Tidx]/cell.h[dir2D.y]/2
-        elif faceE.type == 'east':      v_tmp[idx] += U_wall_right/2
+        elif faceE.type == 'east':      v_tmp[idx] += V_wall_right/2
 
         if faceW.type == 'internal':    v_tmp[idx] += u[faceW.Tidx]/cell.h[dir2D.y]/2
-        elif faceW.type == 'west':      v_tmp[idx] += U_wall_left/2
+        elif faceW.type == 'west':      v_tmp[idx] += V_wall_left/2
 
     u_uvsurf[1:-1,1:-1] = u_tmp.reshape(N+1,N+1)
     v_uvsurf[1:-1,1:-1] = v_tmp.reshape(N+1,N+1)

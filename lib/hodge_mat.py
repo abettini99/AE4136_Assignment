@@ -42,7 +42,7 @@ def construct_H11_2D(grid: Grid2D) -> tuple[sparse.csr.csr_matrix, sparse.csr.cs
             Pidx = primal_face.idx
             Didx = primal_face.Midx
 
-            # Grab face indices
+            # Grab vertex indices
             idxp0 = primal_faces[Pidx].vertices_idx[0]
             idxp1 = primal_faces[Pidx].vertices_idx[1]
             idxd0 = dual_faces[Didx].vertices_idx[0]
