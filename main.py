@@ -31,7 +31,7 @@ def main(N_input) -> None:
     Re      = float(1000)   # Reynolds number
     N       = int(N_input)  	# mesh cells in x- and y-direction
     tol     = float(1e-6)
-    diff    = np.inf
+    diff_Ut = np.inf
 
     ## Set up spaces
     u   = np.zeros([2*N*(N+1)],   dtype = np.float64)
@@ -147,7 +147,13 @@ def main(N_input) -> None:
     convective = np.zeros((2*N*(N+1)), dtype = np.float64)
 
     iter = 0
-    while (diff>tol):
+    xi   = 0
+    t    = 0
+    while (diff_Ut>tol):
+        # Store old xi
+        xiold = xi
+
+        # Calculate vorticity (/circulation)
         xi = Ht02@E21@u + u_pres_vort
 
         # Using JIT from numba to speedup this component
@@ -165,23 +171,28 @@ def main(N_input) -> None:
         # Update the velocity field
         u           = u - dt*(convective + E10@p + (VLaplace@u)/Re + u_pres/Re)
 
+        # Update time
+        t           = t + dt
+
         # Every other 1000 iterations check whether you approach steady state and
         # check whether you satsify conservation of mass. The largest rate at which
         # mass is created or destroyed is denoted my 'maxdiv'. This number should
         # be close to machine precision.
 
         if (iter%15000==0):
-            maxdiv  = max(abs(DIV@u+u_norm))
-            diff    = max(abs(u-uold))/dt
+            maxdiv   = max(abs(DIV@u+u_norm))
+            diff_Ut  = max(abs(u-uold))/dt
+            diff_xit = max(abs(xi-xiold))/dt
 
             if not iter == 0: print("\n")
-            print(f"max(divU) \t| max(DeltaU) \t\t(N = {N_input})")
-            print(f"{maxdiv:.7e} \t| {diff:.7e}")
+            print(f"t \t\t| max(div_U) \t\t| max(Delta_U/Delta_t) \t| max(Delta_xi/Delta_t)  \t\t(N = {N_input}, dt = {dt:.2e}, h_min = {h_min:.2e})")
+            print(f"{t:.3e} \t| {maxdiv:.7e} \t| {diff_Ut:.7e} \t| {diff_xit:.7e}")
 
         elif (iter%1000 == 0):
-            maxdiv  = max(abs(DIV@u+u_norm))
-            diff    = max(abs(u-uold))/dt
-            print(f"{maxdiv:.7e} \t| {diff:.7e}")
+            maxdiv   = max(abs(DIV@u+u_norm))
+            diff_Ut  = max(abs(u-uold))/dt
+            diff_xit = max(abs(xi-xiold))/dt
+            print(f"{t:.3e} \t| {maxdiv:.7e} \t| {diff_Ut:.7e} \t| {diff_xit:.7e}")
 
         iter += 1
     print("tolerance reached")

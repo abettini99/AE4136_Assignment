@@ -159,7 +159,7 @@ if __name__ == "__main__":
     E10            = construct_E10_2D(grid)
     E21, nE21      = construct_E21_2D(grid)
 
-    # plt.imshow(E10d.toarray())
+    # plt.imshow(E21.toarray())
     # plt.show()
 
     # Verify the (negative) transpose of the dual grid is the primal grid operator.
