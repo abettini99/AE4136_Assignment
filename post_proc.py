@@ -44,6 +44,9 @@ N63psi = np.load('exports/N63/psi.npz')
 N63uv = np.load('exports/N63/uv.npz')
 N63vorticity = np.load('exports/N63/vorticity.npz')
 
+refx05 = np.genfromtxt("./ref_data/ref_x05.txt", skip_header = 1)
+
+
 # Check if main figure folder exists
 if not os.path.exists('figures'):
     os.makedirs('figures')
@@ -437,8 +440,6 @@ plt.rc('legend', fontsize=SMALL_SIZE)
 plt.close(fig)
 
 
-
-
 N15_xu = np.zeros(N15uv['u'].shape[0])
 N15_xv = np.zeros(N15uv['v'].shape[0])
 for i in range(N15uv['u'].shape[0]):
@@ -577,3 +578,162 @@ ax[0,0].legend(bbox_to_anchor=(0, -0.2, 1, 0), loc="lower left", mode="expand", 
 plt.savefig("figures/y05v.png", bbox_inches='tight')
 plt.rc('legend', fontsize=SMALL_SIZE)
 plt.close(fig)
+
+
+#%%------------------------------------
+#pressure plot with ref
+
+refx05 = np.genfromtxt("./ref_data/ref_x05.txt", skip_header = 1)
+yx05 =refx05[:,0]
+ux05 =refx05[:,2]
+px05 =refx05[:,3]   
+omegax05 =refx05[:,4]
+
+refy05 = np.genfromtxt("./ref_data/ref_y05.txt", skip_header = 1)
+xy05 =refy05[:,0]
+vy05 =refy05[:,2]
+py05 =refy05[:,3]
+omegay05 =refy05[:,4]
+
+fig, ax = plt.subplots(1,1,squeeze=False,figsize=(16,16))
+ax[0,0].plot(N63pressure['y_pres'][:,32],N63pressure['pres'][:,32], color='orange', linewidth=2, label=r'$N=63$')
+ax[0,0].scatter(yx05,px05, s=200, facecolors='none', edgecolors='k', label=r'Ref') # xconst
+ax[0,0].set_xlim(0, 1)
+ax[0,0].set_xlabel(r"$y\,\,[-]$")
+ax[0,0].set_ylabel(r"$p\,\,[-]$")
+ax[0,0].grid(True,which="major",color="#999999",alpha=0.75)
+ax[0,0].grid(True,which="minor",color="#DDDDDD",ls="--",alpha=0.50)
+ax[0,0].minorticks_on()
+ax[0,0].tick_params(which='major', length=10, width=2, direction='inout')
+ax[0,0].tick_params(which='minor', length=5, width=2, direction='in')
+#ax[0,0].legend(bbox_to_anchor=(0, -0.2, 1, 0), loc="lower left", mode="expand", ncol=4, framealpha=1.0).get_frame().set_edgecolor('k') # bbox_to_anchor = (x0,y0,width,height)
+ax[0,0].legend()
+plt.savefig("figures/x05pressure_withRef.png", bbox_inches='tight')
+plt.rc('legend', fontsize=SMALL_SIZE)
+plt.close(fig)
+
+fig, ax = plt.subplots(1,1,squeeze=False,figsize=(16,16))
+ax[0,0].plot(N63pressure['x_pres'][32,:],N63pressure['pres'][32,:], color='orange', linewidth=2, label=r'$N=63$') # yconst
+ax[0,0].scatter(xy05,py05, s=200, facecolors='none', edgecolors='k', label=r'Ref') # xconst
+ax[0,0].set_xlim(0, 1)
+ax[0,0].set_xlabel(r"$x\,\,[-]$")
+ax[0,0].set_ylabel(r"$p\,\,[-]$")
+ax[0,0].grid(True,which="major",color="#999999",alpha=0.75)
+ax[0,0].grid(True,which="minor",color="#DDDDDD",ls="--",alpha=0.50)
+ax[0,0].minorticks_on()
+ax[0,0].tick_params(which='major', length=10, width=2, direction='inout')
+ax[0,0].tick_params(which='minor', length=5, width=2, direction='in')
+#ax[0,0].legend(bbox_to_anchor=(0, -0.2, 1, 0), loc="lower left", mode="expand", ncol=4, framealpha=1.0).get_frame().set_edgecolor('k') # bbox_to_anchor = (x0,y0,width,height)
+ax[0,0].legend()
+plt.savefig("figures/y05pressure_withRef.png", bbox_inches='tight')
+plt.rc('legend', fontsize=SMALL_SIZE)
+plt.close(fig)
+
+
+#vorticity plots with ref
+
+fig, ax = plt.subplots(1,1,squeeze=False,figsize=(16,16))
+ax[0,0].plot(N63vorticity['y_vort'][:,0],N63_xvort, color='orange', linewidth=2, label=r'$N=63$') # xconst
+ax[0,0].scatter(yx05,omegax05, s=200, facecolors='none', edgecolors='k', label=r'Ref')
+ax[0,0].set_xlim(0, 1)
+ax[0,0].set_xlabel(r"$y\,\,[-]$")
+ax[0,0].set_ylabel(r"$\omega\,\,[-]$")
+ax[0,0].grid(True,which="major",color="#999999",alpha=0.75)
+ax[0,0].grid(True,which="minor",color="#DDDDDD",ls="--",alpha=0.50)
+ax[0,0].minorticks_on()
+ax[0,0].tick_params(which='major', length=10, width=2, direction='inout')
+ax[0,0].tick_params(which='minor', length=5, width=2, direction='in')
+#ax[0,0].legend(bbox_to_anchor=(0, -0.2, 1, 0), loc="lower left", mode="expand", ncol=4, framealpha=1.0).get_frame().set_edgecolor('k') # bbox_to_anchor = (x0,y0,width,height)
+ax[0,0].legend()
+plt.savefig("figures/x05vorticity_withRef.png", bbox_inches='tight')
+plt.rc('legend', fontsize=SMALL_SIZE)
+plt.close(fig)
+
+
+fig, ax = plt.subplots(1,1,squeeze=False,figsize=(16,16))
+ax[0,0].plot(N63vorticity['x_vort'][0,:],N63_yvort, color='orange', linewidth=2, label=r'$N=63$') # yconst
+ax[0,0].scatter(xy05,omegay05, s=200, facecolors='none', edgecolors='k', label=r'Ref')
+ax[0,0].set_xlim(0, 1)
+ax[0,0].set_xlabel(r"$x\,\,[-]$")
+ax[0,0].set_ylabel(r"$\omega\,\,[-]$")
+ax[0,0].grid(True,which="major",color="#999999",alpha=0.75)
+ax[0,0].grid(True,which="minor",color="#DDDDDD",ls="--",alpha=0.50)
+ax[0,0].minorticks_on()
+ax[0,0].tick_params(which='major', length=10, width=2, direction='inout')
+ax[0,0].tick_params(which='minor', length=5, width=2, direction='in')
+#ax[0,0].legend(bbox_to_anchor=(0, -0.2, 1, 0), loc="lower left", mode="expand", ncol=4, framealpha=1.0).get_frame().set_edgecolor('k') # bbox_to_anchor = (x0,y0,width,height)
+ax[0,0].legend()
+plt.savefig("figures/y05vorticity_withRef.png", bbox_inches='tight')
+plt.rc('legend', fontsize=SMALL_SIZE)
+plt.close(fig)
+
+
+#Velocity at x =0.5
+fig, ax = plt.subplots(1,1,squeeze=False,figsize=(16,16))
+ax[0,0].plot(N63uv['y_uv'][:,0],N63_xu, color='orange', linewidth=2, label=r'$N=63$') # xconst
+ax[0,0].scatter(yx05,ux05, s=200, facecolors='none', edgecolors='k', label=r'Ref')
+ax[0,0].set_xlim(0, 1)
+ax[0,0].set_xlabel(r"$y\,\,[-]$")
+ax[0,0].set_ylabel(r"$u\,\,[-]$")
+ax[0,0].grid(True,which="major",color="#999999",alpha=0.75)
+ax[0,0].grid(True,which="minor",color="#DDDDDD",ls="--",alpha=0.50)
+ax[0,0].minorticks_on()
+ax[0,0].tick_params(which='major', length=10, width=2, direction='inout')
+ax[0,0].tick_params(which='minor', length=5, width=2, direction='in')
+#ax[0,0].legend(bbox_to_anchor=(0, -0.2, 1, 0), loc="lower left", mode="expand", ncol=4, framealpha=1.0).get_frame().set_edgecolor('k') # bbox_to_anchor = (x0,y0,width,height)
+ax[0,0].legend()
+plt.savefig("figures/x05u_withRef.png", bbox_inches='tight')
+plt.rc('legend', fontsize=SMALL_SIZE)
+plt.close(fig)
+
+fig, ax = plt.subplots(1,1,squeeze=False,figsize=(16,16))
+ax[0,0].plot(N63uv['y_uv'][:,0],N63_xv, color='orange', linewidth=2, label=r'$N=63$') # xconst
+ax[0,0].set_xlim(0, 1)
+ax[0,0].set_xlabel(r"$y\,\,[-]$")
+ax[0,0].set_ylabel(r"$v\,\,[-]$")
+ax[0,0].grid(True,which="major",color="#999999",alpha=0.75)
+ax[0,0].grid(True,which="minor",color="#DDDDDD",ls="--",alpha=0.50)
+ax[0,0].minorticks_on()
+ax[0,0].tick_params(which='major', length=10, width=2, direction='inout')
+ax[0,0].tick_params(which='minor', length=5, width=2, direction='in')
+#ax[0,0].legend(bbox_to_anchor=(0, -0.2, 1, 0), loc="lower left", mode="expand", ncol=4, framealpha=1.0).get_frame().set_edgecolor('k') # bbox_to_anchor = (x0,y0,width,height)
+ax[0,0].legend()
+plt.savefig("figures/x05v_withRef.png", bbox_inches='tight')
+plt.rc('legend', fontsize=SMALL_SIZE)
+plt.close(fig)
+
+
+
+fig, ax = plt.subplots(1,1,squeeze=False,figsize=(16,16))
+ax[0,0].plot(N63uv['x_uv'][0,:],N63_yu, color='orange', linewidth=2, label=r'$N=63$') # yconst
+ax[0,0].set_xlim(0, 1)
+ax[0,0].set_xlabel(r"$x\,\,[-]$")
+ax[0,0].set_ylabel(r"$u\,\,[-]$")
+ax[0,0].grid(True,which="major",color="#999999",alpha=0.75)
+ax[0,0].grid(True,which="minor",color="#DDDDDD",ls="--",alpha=0.50)
+ax[0,0].minorticks_on()
+ax[0,0].tick_params(which='major', length=10, width=2, direction='inout')
+ax[0,0].tick_params(which='minor', length=5, width=2, direction='in')
+#ax[0,0].legend(bbox_to_anchor=(0, -0.2, 1, 0), loc="lower left", mode="expand", ncol=4, framealpha=1.0).get_frame().set_edgecolor('k') # bbox_to_anchor = (x0,y0,width,height)
+ax[0,0].legend()
+plt.savefig("figures/y05u_withRef.png", bbox_inches='tight')
+plt.rc('legend', fontsize=SMALL_SIZE)
+plt.close(fig)
+
+fig, ax = plt.subplots(1,1,squeeze=False,figsize=(16,16))
+ax[0,0].plot(N63uv['x_uv'][0,:],N63_yv, color='orange', linewidth=2, label=r'$N=63$') # yconst
+ax[0,0].scatter(xy05,vy05, s=200, facecolors='none', edgecolors='k', label=r'Ref')
+ax[0,0].set_xlim(0, 1)
+ax[0,0].set_xlabel(r"$x\,\,[-]$")
+ax[0,0].set_ylabel(r"$v\,\,[-]$")
+ax[0,0].grid(True,which="major",color="#999999",alpha=0.75)
+ax[0,0].grid(True,which="minor",color="#DDDDDD",ls="--",alpha=0.50)
+ax[0,0].minorticks_on()
+ax[0,0].tick_params(which='major', length=10, width=2, direction='inout')
+ax[0,0].tick_params(which='minor', length=5, width=2, direction='in')
+#ax[0,0].legend(bbox_to_anchor=(0, -0.2, 1, 0), loc="lower left", mode="expand", ncol=4, framealpha=1.0).get_frame().set_edgecolor('k') # bbox_to_anchor = (x0,y0,width,height)
+ax[0,0].legend()
+plt.savefig("figures/y05v_withRef.png", bbox_inches='tight')
+plt.rc('legend', fontsize=SMALL_SIZE)
+plt.close(fig)
+
